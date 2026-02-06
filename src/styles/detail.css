@@ -1,0 +1,46 @@
+/* Project Detail Styles */
+.detail-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: #fff;
+    z-index: 100;
+    overflow-y: auto;
+    padding: 40px;
+    box-sizing: border-box;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+}
+
+.detail-view.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.detail-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.close-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 10px 20px;
+    cursor: pointer;
+    z-index: 101;
+    font-family: monospace;
+    text-transform: uppercase;
+}
+
+.close-btn:hover {
+    background: #fff;
+    color: #000;
+}

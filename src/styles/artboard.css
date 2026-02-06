@@ -1,0 +1,55 @@
+/* Artboard / Infinite Canvas Styles */
+.artboard {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #000;
+  cursor: grab;
+}
+
+.artboard:active {
+  cursor: grabbing;
+}
+
+.canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+  /* Use a large size for the infinite feel */
+  width: 10000px;
+  height: 8000px;
+
+  /* Masonry Layout */
+  /* display: flex;  <-- REMOVED flex */
+  /* justify-content: center; */
+  /* align-items: center; */
+}
+
+/* .masonry-grid { ... } REMOVED */
+
+.art-item {
+  position: absolute;
+  /* Restored absolute */
+  transition: transform 0.3s ease, filter 0.3s ease;
+  cursor: pointer;
+  /* break-inside: avoid; */
+  /* margin-bottom: 40px; */
+}
+
+.art-item img {
+  display: block;
+  width: 100%;
+  /* Responsive to column width */
+  height: auto;
+  pointer-events: none;
+}
+
+.art-item:hover {
+  z-index: 10;
+  transform: scale(1.05);
+  filter: brightness(1.2);
+}
