@@ -46,6 +46,16 @@
   /* Responsive to column width */
   height: auto;
   pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.art-item,
+.artboard,
+.canvas-container {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .art-item:hover {

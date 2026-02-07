@@ -33,28 +33,46 @@ export class Artboard {
         ];
 
         // Generate massive amount of items (2400 items)
-        this.items = [];
+        this.allItems = [];
+        this.items = []; // Currently visible items
         this.renderedItems = new Map(); // Track currently rendered DOM nodes by ID
+
+        const tags = ['Architecture', 'Design', 'Nature', 'Tech', 'Art'];
 
         for (let i = 0; i < 400; i++) { // 400 * 6 = 2400 items
             baseItems.forEach((item, index) => {
-                this.items.push({
+                // Generate a random gallery for this item (3-5 images)
+                const galleryCount = 3 + Math.floor(Math.random() * 3);
+                const gallery = [];
+                for (let g = 0; g < galleryCount; g++) {
+                    gallery.push(baseItems[Math.floor(Math.random() * baseItems.length)].img);
+                }
+
+                this.allItems.push({
                     id: i * 6 + index + 1,
                     title: `${item.title} (v.${i + 1})`,
-                    img: item.img,
-                    // Simulate aspect ratio between 0.8 and 1.6
-                    aspectRatio: 0.8 + Math.random() * 0.8
+                    img: item.img, // Main Thumbnail
+                    aspectRatio: 0.8 + Math.random() * 0.8,
+                    tag: tags[Math.floor(Math.random() * tags.length)], // Random Tag
+                    // Rich Metadata
+                    author: `Designer ${i + 1}`,
+                    avatar: baseItems[(index + 1) % baseItems.length].img, // Use another image as avatar
+                    description: `This is a detailed description for project ${item.title}. It explores the relationship between digital space and physical limits. The project was conceived during the 2025 semester.`,
+                    gallery: gallery // List of images to lazy load
                 });
             });
         }
+
+        // Default: Show all
+        this.items = [...this.allItems];
     }
 
-    init() {
+    async init() {
+        await this.loadData();
+
         this.calculateLayout();
+
         // Center Viewport initially
-        // We want 0,0 (visual center) to look at the center of the world
-        // currentX/Y translates the world.
-        // So currentX = -worldWidth/2 + window.innerWidth/2
         this.currentX = -this.worldWidth / 2 + window.innerWidth / 2;
         this.currentY = -this.worldHeight / 2 + window.innerHeight / 2;
         this.targetX = this.currentX;
@@ -65,13 +83,57 @@ export class Artboard {
         this.animate();
     }
 
+    async loadData() {
+        try {
+            const { fetchProjects } = await import('../services/strapi.js');
+            const apiData = await fetchProjects();
+
+            if (apiData && apiData.length > 0) {
+                console.log('Using Strapi Data:', apiData);
+                this.allItems = apiData;
+                this.items = [...this.allItems];
+            } else {
+                console.log('Using Mock Data (Constructor Default)');
+            }
+        } catch (e) {
+            console.error('Error loading data:', e);
+        }
+    }
+
+    filter(tagName) {
+        // Clear current DOM
+        this.renderedItems.forEach(el => el.remove());
+        this.renderedItems.clear();
+
+        if (tagName === 'All') {
+            this.items = [...this.allItems];
+        } else {
+            this.items = this.allItems.filter(item => item.tag === tagName);
+        }
+
+        // Recalculate layout for new set
+        this.calculateLayout();
+
+        // Re-center view to avoid getting lost
+        this.currentX = -this.worldWidth / 2 + window.innerWidth / 2;
+        this.currentY = -this.worldHeight / 2 + window.innerHeight / 2;
+        this.targetX = this.currentX;
+        this.targetY = this.currentY;
+
+        // Force immediate update
+        this.updateVirtualDOM();
+    }
+
+
+
     calculateLayout() {
         const columnCount = 12;
         const colWidth = 350;
         const gap = 80;
 
         // Initialize column heights
-        const colHeights = Array(columnCount).fill(0).map(() => Math.random() * 400);
+        // Initialize column heights
+        const colHeights = Array(columnCount).fill(0);
 
         // Calculate needed width
         this.worldWidth = columnCount * colWidth + (columnCount - 1) * gap + gap; // Add gap for wrapping spacing
@@ -183,8 +245,15 @@ export class Artboard {
                     <div style="margin-top: 10px; font-size: 12px; letter-spacing: 1px; position: absolute; bottom: -30px; left: 0;">${item.title}</div>
                 `;
                 el.addEventListener('click', () => {
-                    if (Math.abs(this.vx) < 0.5 && Math.abs(this.vy) < 0.5) {
-                        window.openDetail({ title: item.title, desc: `Details about ${item.title}`, img: item.img });
+                    if (!this.hasDragged) {
+                        window.openDetail({
+                            title: item.title,
+                            description: item.description,
+                            img: item.img,
+                            author: item.author,
+                            avatar: item.avatar,
+                            gallery: item.gallery
+                        });
                     }
                 });
                 this.canvas.appendChild(el);
@@ -217,6 +286,11 @@ export class Artboard {
         this.startX = e.clientX;
         this.startY = e.clientY;
 
+        // Track click origin for drag vs click detection
+        this.clickStartX = e.clientX;
+        this.clickStartY = e.clientY;
+        this.hasDragged = false;
+
         // Stop inertia on grab
         this.vx = 0;
         this.vy = 0;
@@ -237,6 +311,14 @@ export class Artboard {
 
         this.startX = e.clientX;
         this.startY = e.clientY;
+
+        // Check if actually dragged (threshold > 3px)
+        if (!this.hasDragged) {
+            const dist = Math.hypot(e.clientX - this.clickStartX, e.clientY - this.clickStartY);
+            if (dist > 3) {
+                this.hasDragged = true;
+            }
+        }
     }
 
     onMouseUp() {
